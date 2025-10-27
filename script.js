@@ -1,5 +1,7 @@
 function appendToDisplay(value) {
-  document.getElementById("display").value += value;
+  const display = document.getElementById("display");
+  if (display.value === "Error") display.value = "";
+  display.value += value;
 }
 
 function clearDisplay() {
@@ -9,7 +11,7 @@ function clearDisplay() {
 function calculateResult() {
   const display = document.getElementById("display");
   try {
-    display.value = eval(display.value);
+    display.value = eval(display.value) || "";
   } catch {
     display.value = "Error";
   }
