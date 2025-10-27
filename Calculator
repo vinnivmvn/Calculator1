@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8" />
+ <meta name="viewport" content="width=device-width,initial-scale=1" />
+ <title>Simple Calculator</title>
+ <style>
+ :root{
+ --bg:#eef0f3;
+ --panel:#f7f8fa;
+ --accent:#6477ff;
+ --shadow: rgba(0,0,0,0.12);
+ }
+ body{display:flex;align-items:center;justify-content:center;background:#eef0f3;height:100vh;}
+ .calc{width:320px;background:#fff;border-radius:14px;box-shadow:0 8px 20px var(--shadow);padding:18p .display{height:60px;background:white;border-radius:8px;text-align:right;padding:12px;font-size:26px button{height:56px;border-radius:8px;border:none;font-size:18px;font-weight:600;margin:4px;cursor:po .op{color:#6477ff;}
+ .eq{background:#6477ff;color:white;height:122px;}
+ .clear{grid-column:1/5;background:#fff;border:1px solid #ccc;height:44px;margin-top:12px;font-weight </style>
+</head>
+<body>
+ <div class="calc">
+ <div class="display" id="display">0</div>
+ <div class="pad">
+ <button>7</button><button>8</button><button>9</button><button class="op">+</button>
+ <button>4</button><button>5</button><button>6</button><button class="op">−</button>
+ <button>1</button><button>2</button><button>3</button><button class="op">×</button>
+ <button>0</button><button>.</button><button class="op">÷</button><button class="eq">=</button>
+ <button class="clear">Clear</button>
+ </div>
+ </div>
+ <script>
+ const display=document.getElementById('display');
+ let expr='';
+ document.querySelectorAll('button').forEach(btn=>{
+ btn.addEventListener('click',()=>{
+ const v=btn.textContent;
+ if(v==='='){try{expr=eval(expr).toString()}catch{expr='Error'}}else if(v==='Clear'){expr=''}else display.textContent=expr||'0';
+ });
+ });
+ </script>
+</body>
+</html>
