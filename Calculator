@@ -10,32 +10,267 @@
  --panel:#f7f8fa;
  --accent:#6477ff;
  --shadow: rgba(0,0,0,0.12);
+ --btn-shadow: rgba(0,0,0,0.18);
  }
- body{display:flex;align-items:center;justify-content:center;background:#eef0f3;height:100vh;}
- .calc{width:320px;background:#fff;border-radius:14px;box-shadow:0 8px 20px var(--shadow);padding:18p .display{height:60px;background:white;border-radius:8px;text-align:right;padding:12px;font-size:26px button{height:56px;border-radius:8px;border:none;font-size:18px;font-weight:600;margin:4px;cursor:po .op{color:#6477ff;}
- .eq{background:#6477ff;color:white;height:122px;}
- .clear{grid-column:1/5;background:#fff;border:1px solid #ccc;height:44px;margin-top:12px;font-weight </style>
+ *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica  body{
+ margin:0;
+ min-height:100vh;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ background:linear-gradient(180deg,#f3f5f9 0%, #eef0f3 100%);
+ padding:24px;
+ }
+ .calc {
+ width:320px;
+ background:var(--panel);
+ border-radius:14px;
+ box-shadow: 0 8px 20px var(--shadow);
+ padding:18px;
+ border: 1px solid rgba(0,0,0,0.04);
+ }
+ .display {
+ height:60px;
+ background: white;
+ border-radius:8px;
+ display:flex;
+ align-items:center;
+ justify-content:flex-end;
+ padding:12px 14px;
+ font-size:26px;
+ font-weight:600;
+ color:#111827;
+ box-shadow: inset 0 -6px 24px rgba(0,0,0,0.03);
+ margin-bottom:14px;
+ overflow-x:auto;
+ }
+ .display .sub {
+ font-size:12px;
+ font-weight:500;
+ color:#6b7280;
+ margin-right:auto;
+ }
+ .pad {
+ display:grid;
+ grid-template-columns: repeat(4, 1fr);
+ gap:10px;
+ }
+ button.btn {
+ height:56px;
+ border-radius:8px;
+ border: none;
+ background:linear-gradient(180deg,#ffffff,#f1f5ff);
+ box-shadow: 0 4px 6px var(--btn-shadow);
+ font-size:18px;
+ font-weight:600;
+ cursor:pointer;
+ transition: transform .06s ease, box-shadow .06s;
+ user-select:none;
+ }
+ button.btn:active { transform: translateY(1px) scale(.997); }
+ button.op {
+ background: linear-gradient(180deg,#f0f6ff,#e8edff);
+ color:var(--accent);
+ }
+ button.eq {
+ grid-column: 4 / 5;
+ grid-row: 4 / 6;
+ height: 122px;
+ background: linear-gradient(180deg,var(--accent), #4e63ff);
+ color:white;
+ border-radius:8px;
+ font-size:20px;
+ }
+ button.clear {
+ grid-column: 1 / 5;
+ background: #fff;
+ border: 1px solid rgba(0,0,0,0.06);
+ color:#111827;
+ height:44px;
+ margin-top:12px;
+ font-weight:700;
+ }
+ /* smaller screens */
+ @media (max-width:360px){
+ .calc{width:92%}
+ .display{font-size:22px;height:56px}
+ button.btn{height:48px}
+ button.eq{height:108px}
+ }
+ /* subtle focus for keyboard users */
+ button:focus{outline:3px solid rgba(100,119,255,0.16)}
+ </style>
 </head>
 <body>
- <div class="calc">
- <div class="display" id="display">0</div>
- <div class="pad">
- <button>7</button><button>8</button><button>9</button><button class="op">+</button>
- <button>4</button><button>5</button><button>6</button><button class="op">−</button>
- <button>1</button><button>2</button><button>3</button><button class="op">×</button>
- <button>0</button><button>.</button><button class="op">÷</button><button class="eq">=</button>
- <button class="clear">Clear</button>
+ <main class="calc" role="application" aria-label="Simple calculator">
+ <div class="display" id="display" aria-live="polite" tabindex="0">0</div>
+ <div class="pad" role="group" aria-label="Calculator keypad">
+ <!-- Row 1 -->
+ <button class="btn" data-value="7">7</button>
+ <button class="btn" data-value="8">8</button>
+ <button class="btn" data-value="9">9</button>
+ <button class="btn op" data-value="+">+</button>
+ <!-- Row 2 -->
+ <button class="btn" data-value="4">4</button>
+ <button class="btn" data-value="5">5</button>
+ <button class="btn" data-value="6">6</button>
+ <button class="btn op" data-value="-">−</button>
+ <!-- Row 3 -->
+ <button class="btn" data-value="1">1</button>
+ <button class="btn" data-value="2">2</button>
+ <button class="btn" data-value="3">3</button>
+ <button class="btn op" data-value="*">×</button>
+ <!-- Row 4 -->
+ <button class="btn" aria-hidden="true" disabled style="background:#f5f6f8;box-shadow:none;"></butt <button class="btn" data-value="0">0</button>
+ <button class="btn" data-value=".">.</button>
+ <button class="btn op" data-value="/">÷</button>
+ <!-- Equals (spans rows) -->
+ <button class="btn eq" id="equals" aria-label="equals">=</button>
+ <!-- Clear button -->
+ <button class="clear" id="clear">Clear</button>
  </div>
- </div>
+ </main>
  <script>
- const display=document.getElementById('display');
- let expr='';
- document.querySelectorAll('button').forEach(btn=>{
- btn.addEventListener('click',()=>{
- const v=btn.textContent;
- if(v==='='){try{expr=eval(expr).toString()}catch{expr='Error'}}else if(v==='Clear'){expr=''}else display.textContent=expr||'0';
+ (function(){
+ const displayEl = document.getElementById('display');
+ const buttons = Array.from(document.querySelectorAll('button[data-value]'));
+ const eq = document.getElementById('equals');
+ const clearBtn = document.getElementById('clear');
+ // Expression model as a string
+ let expr = '';
+ let lastWasResult = false;
+ function updateDisplay(){
+ displayEl.textContent = expr || '0';
+ }
+ function isOperator(ch){
+ return ch === '+' || ch === '-' || ch === '*' || ch === '/';
+ }
+ function pushValue(v){
+ // If previous action produced a result and user types a number or dot, start new expr
+ if (lastWasResult && (/\d|\./).test(v)){
+ expr = '';
+ lastWasResult = false;
+ }
+ // prevent two operators in a row (except minus after operator allowed? keep simple: disallow)
+ const last = expr.slice(-1);
+ if (isOperator(v)){
+ if (!expr) {
+ // allow leading minus for negative numbers
+ if (v === '-') expr = v;
+ // else ignore leading + * /
+ return;
+ }
+ if (isOperator(last)){
+ // replace operator with new one
+ expr = expr.slice(0,-1) + v;
+ updateDisplay(); return;
+ }
+ expr += v;
+ } else if (v === '.'){
+ // avoid multiple dots in the current number segment
+ // find last operator position
+ let lastOp = -1;
+ for (let i = expr.length-1; i>=0; i--){
+ if (isOperator(expr[i])) { lastOp = i; break; }
+ }
+ const currentNum = expr.slice(lastOp+1);
+ if (currentNum.includes('.')) return; // ignore extra dot
+ if (currentNum === '' || currentNum === '-') {
+ // if starting a number with dot -> prepend 0
+ expr += '0.';
+ } else {
+ expr += '.';
+ }
+ } else {
+ expr += v;
+ }
+ updateDisplay();
+ }
+ // Attach button clicks
+ buttons.forEach(btn => {
+ btn.addEventListener('click', e => {
+ pushValue(btn.getAttribute('data-value'));
  });
  });
+ // Clear
+ clearBtn.addEventListener('click', () => {
+ expr = '';
+ lastWasResult = false;
+ updateDisplay();
+ });
+ // Evaluate
+ function evaluateExpression(){
+ if (!expr) return;
+ // trim trailing operator
+ while (expr && isOperator(expr.slice(-1))) expr = expr.slice(0,-1);
+ // replace unicode × ÷ signs if any (we used * and / internally)
+ const safeExpr = expr.replace(/×/g,'*').replace(/÷/g,'/');
+ try {
+ // Very small sandbox: prevent letters
+ if (/[a-zA-Z]/.test(safeExpr)) throw new Error('invalid input');
+ // Use Function to evaluate (safer than raw eval in some contexts),
+ // but still only for trusted local input in this small assignment.
+ const fn = new Function('return ' + safeExpr);
+ let result = fn();
+ // handle division by zero / Infinity
+ if (!isFinite(result)) {
+ expr = 'Error';
+ updateDisplay();
+ lastWasResult = true;
+ return;
+ }
+ // round long floats to sensible precision
+ if (typeof result === 'number'){
+ result = Math.round((result + Number.EPSILON) * 1e12) / 1e12;
+ }
+ expr = String(result);
+ updateDisplay();
+ lastWasResult = true;
+ } catch (err){
+ expr = 'Error';
+ updateDisplay();
+ lastWasResult = true;
+ }
+ }
+ eq.addEventListener('click', evaluateExpression);
+ // Keyboard support
+ window.addEventListener('keydown', (ev) => {
+ if (ev.key === 'Enter' || ev.key === '=') {
+ ev.preventDefault();
+ evaluateExpression();
+ return;
+ }
+ if (ev.key === 'Backspace') {
+ ev.preventDefault();
+ if (lastWasResult){
+ expr = '';
+ lastWasResult = false;
+ updateDisplay();
+ return;
+ }
+ expr = expr.slice(0,-1);
+ updateDisplay();
+ return;
+ }
+ if (ev.key === 'Escape') {
+ ev.preventDefault();
+ expr = '';
+ lastWasResult = false;
+ updateDisplay();
+ return;
+ }
+ // Accept digits, ., and operators
+ if (/^[0-9+\-*/.]$/.test(ev.key)){
+ ev.preventDefault();
+ pushValue(ev.key);
+ return;
+ }
+ });
+ // Initialize
+ updateDisplay();
+ // make display focusable for keyboard a11y
+ displayEl.setAttribute('role','status');
+ })();
  </script>
 </body>
 </html>
